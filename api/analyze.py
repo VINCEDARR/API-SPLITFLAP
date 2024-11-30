@@ -1,9 +1,8 @@
-from flask import Flask, jsonify
+import json
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 
-app = Flask(__name__)
-
+# API keys
 NEWS_API_KEY = 'E_S4rUOyq3qjk_V-ZNKilvdYEWKNx5FkD-IlyJa3cZNZaIuK'
 WEATHER_API_KEY = '7f40d40f66b7851cd4534b53c191eb0f'
 AQI_API_KEY = '86c94aa5-a854-4562-955a-3383c0860892'
@@ -109,12 +108,12 @@ def determine_overall_sentiment(sentiments):
     overall_sentiment = max(sentiment_count, key=sentiment_count.get)
     return overall_sentiment
 
-@app.route('/api/analyze', methods=['GET'])
-def analyze():
+# Vercel handler function for serverless
+def handler(request):
     # Fetch the latest news
     news = fetch_latest_news(NEWS_API_KEY)
     if not news:
-        return jsonify({'error': 'Unable to fetch news'}), 500
+        return json.dumps({'error': 'Unable to fetch news'}), 500
     
     # Analyze sentiment for each news title
     news_results = []
@@ -153,17 +152,13 @@ def analyze():
     master_sentiment = determine_overall_sentiment(all_sentiments)
 
     # Prepare response in the desired order
-    response = jsonify({
+    response = {
         'news_results': news_results,
         'overall_news_sentiment': overall_news_sentiment,
         'stock_sentiments': stock_sentiments,
         'weather_sentiment': weather_sentiment,
         'aqi_sentiment': aqi_sentiment,
         'master_sentiment': master_sentiment
-    })
+    }
 
-    return response
-
-# Handler for Vercel
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    return json.dumps(response), 200
